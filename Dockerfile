@@ -24,6 +24,7 @@ RUN apt-get update \
 		apt-transport-https \
 		gsfonts \
 		gnupg2 \
+		curl \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Configure default locale, see https://github.com/rocker-org/rocker/issues/19
@@ -37,9 +38,13 @@ ENV LANG en_US.UTF-8
 RUN echo "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/" > /etc/apt/sources.list.d/cran.list
 
 # note the proxy for gpg
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
-
+RUN curl -sSL 'http://keyserver.ubuntu.com/pks/lookup?op=get&search=0xE084DAB9' | gpg --import
+RUN gpg -a --export E084DAB9 | apt-key add -
+RUN curl -sSL 'http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x51716619E084DAB9' | gpg --import
+RUN gpg -a --export 51716619E084DAB9 | apt-key add -
+   
 ENV R_BASE_VERSION 3.6.1
+LABEL version=3.6.1
 
 # Now install R and littler, and create a link for littler in /usr/local/bin
 # Also set a default CRAN repo, and make sure littler knows about it too
