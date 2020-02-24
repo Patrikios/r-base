@@ -35,7 +35,7 @@ pipeline {
             
         }
         
-        stage('Docker Push') {
+        stage('Docker Push (versioned)') {
         
             steps {
             
@@ -44,9 +44,6 @@ pipeline {
                         url: "https://registry.openanalytics.eu"]) {
                         
                     sh """
-                    docker tag ${env.IMAGE} ${env.REG_OA}/${env.REPO_OA}/${env.IMAGE}
-                    docker push ${env.REG_OA}/${env.REPO_OA}/${env.IMAGE}
-                    
                     export VERSION=\$(docker inspect ${env.IMAGE} -f '{{ index .Config.Labels.version }}')
                     docker tag ${env.IMAGE} ${env.REG_OA}/${env.REPO_OA}/${env.IMAGE}:\$VERSION
                     docker push ${env.REG_OA}/${env.REPO_OA}/${env.IMAGE}:\$VERSION
@@ -65,9 +62,31 @@ pipeline {
                      """
                      
                 }
-                
             }
-            
+        }
+        
+        stage ('Docker Push (latest)') {
+            when {
+                branch "master"
+            }
+            steps {
+                withDockerRegistry([
+                        credentialsId: "jenkins-portus-token",
+                        url: "https://registry.openanalytics.eu"]) {
+                    sh """
+                    docker tag ${env.IMAGE} ${env.REG_OA}/${env.REPO_OA}/${env.IMAGE}:latest
+                    docker push ${env.REG_OA}/${env.REPO_OA}/${env.IMAGE}:latest
+                    """
+                }
+                withDockerRegistry([
+                         credentialsId: "openanalytics-dockerhub",
+                         url: "https://index.docker.io/v1/"]) {
+                    sh """
+                    docker tag ${env.IMAGE} ${env.REPO_HUB}/${env.IMAGE}:latest
+                    docker push ${env.REPO_HUB}/${env.IMAGE}:latest
+                    """
+                }
+            }
         }
      
     }
